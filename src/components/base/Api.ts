@@ -16,18 +16,19 @@ export class Api {
 
     protected handleResponse<T>(response: Response): Promise<T> {
         if (response.ok) return response.json();
-        else return response.json()
+        
+        return response.json()
             .then(data => Promise.reject(data.error ?? response.statusText));
     }
 
-    get<T extends object>(uri: string) {
+    get<T extends object>(uri: string): Promise<T> {
         return fetch(this.baseUrl + uri, {
             ...this.options,
             method: 'GET'
         }).then(this.handleResponse<T>);
     }
 
-    post<T extends object>(uri: string, data: object, method: ApiPostMethods = 'POST') {
+    post<T extends object>(uri: string, data: object, method: ApiPostMethods = 'POST'): Promise<T> {
         return fetch(this.baseUrl + uri, {
             ...this.options,
             method,
