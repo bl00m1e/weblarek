@@ -1,8 +1,7 @@
-import { Api } from '../base/Api';
-import type { IProductsResponse, IOrderRequest, IOrderResponse } from '../../types/index';
+import type { IProductsResponse, IOrderRequest, IOrderResponse, IApi } from '../../types/index';
 
 export class LarekAPI {
-  constructor(protected api: Api) {}
+  constructor(protected api: IApi) {}
 
   getProducts(): Promise<IProductsResponse> {
     return this.api.get<IProductsResponse>('/product');

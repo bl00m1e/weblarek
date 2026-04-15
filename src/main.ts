@@ -1,5 +1,8 @@
 import './scss/styles.scss';
 
+// Импортируем константы
+import { API_URL } from './utils/constants';
+
 // Импортируем модели данных
 import { Products } from './components/models/Products';
 import { Cart } from './components/models/Cart';
@@ -41,40 +44,40 @@ console.log('🛒 КОРЗИНА:');
 const cartModel = new Cart();
 
 // Проверяем пустую корзину
-console.log('✅ Пустая корзина:', cartModel.getItems());
-console.log('📊 Количество товаров:', cartModel.getCount());
-console.log('💰 Общая стоимость:', cartModel.getTotal());
+console.log('✅ Пустая корзина:', cartModel.getCartItems());
+console.log('📊 Количество товаров:', cartModel.getCartItemsCount());
+console.log('💰 Общая стоимость:', cartModel.getCartTotalPrice());
 
-// Тестируем add
+// Тестируем addProductToCart
 if (firstProduct) {
-  cartModel.add(firstProduct);
+  cartModel.addProductToCart(firstProduct);
   console.log('\n✅ После добавления товара:');
-  console.log('Товары в корзине:', cartModel.getItems());
-  console.log('Количество товаров:', cartModel.getCount());
-  console.log('Общая стоимость:', cartModel.getTotal());
+  console.log('Товары в корзине:', cartModel.getCartItems());
+  console.log('Количество товаров:', cartModel.getCartItemsCount());
+  console.log('Общая стоимость:', cartModel.getCartTotalPrice());
   
-  // Тестируем has
-  console.log('✅ Товар есть в корзине:', cartModel.has(firstProduct.id));
+  // Тестируем isProductInCart
+  console.log('✅ Товар есть в корзине:', cartModel.isProductInCart(firstProduct.id));
   
-  // Тестируем remove
-  cartModel.remove(firstProduct);
+  // Тестируем removeProductFromCart
+  cartModel.removeProductFromCart(firstProduct.id);
   console.log('\n✅ После удаления товара:');
-  console.log('Товары в корзине:', cartModel.getItems());
-  console.log('Количество товаров:', cartModel.getCount());
+  console.log('Товары в корзине:', cartModel.getCartItems());
+  console.log('Количество товаров:', cartModel.getCartItemsCount());
   
-  // Добавляем несколько товаров для проверки getTotal
+  // Добавляем несколько товаров для проверки getCartTotalPrice
   const product1 = apiProducts.items[0];
   const product2 = apiProducts.items[1];
   if (product1 && product2) {
-    cartModel.add(product1);
-    cartModel.add(product2);
+    cartModel.addProductToCart(product1);
+    cartModel.addProductToCart(product2);
     console.log('\n✅ После добавления двух товаров:');
-    console.log('Количество товаров:', cartModel.getCount());
-    console.log('Общая стоимость:', cartModel.getTotal());
+    console.log('Количество товаров:', cartModel.getCartItemsCount());
+    console.log('Общая стоимость:', cartModel.getCartTotalPrice());
     
-    // Тестируем clear
-    cartModel.clear();
-    console.log('\n✅ После очистки корзины:', cartModel.getItems());
+    // Тестируем clearCart
+    cartModel.clearCart();
+    console.log('\n✅ После очистки корзины:', cartModel.getCartItems());
   }
 }
 console.log('');
@@ -84,59 +87,39 @@ console.log('👤 ДАННЫЕ ПОКУПАТЕЛЯ:');
 const buyerModel = new Buyer();
 
 // Проверяем пустые данные
-console.log('✅ Пустые данные:', buyerModel.get());
+console.log('✅ Пустые данные:', buyerModel.getData());
 
-// Тестируем set
-buyerModel.set('payment', 'card');
-buyerModel.set('email', 'test@example.com');
-buyerModel.set('phone', '+79991234567');
-buyerModel.set('address', 'г. Москва, ул. Примерная, д. 1');
+// Тестируем setField
+buyerModel.setField('payment', 'card');
+buyerModel.setField('email', 'test@example.com');
+buyerModel.setField('phone', '+79991234567');
+buyerModel.setField('address', 'г. Москва, ул. Примерная, д. 1');
 
 console.log('\n✅ После заполнения данных:');
-console.log(buyerModel.get());
+console.log(buyerModel.getData());
 
 // Тестируем validate (должен вернуть пустой объект)
 console.log('\n✅ Валидация заполненных данных:', buyerModel.validate());
 
 // Тестируем clear
 buyerModel.clear();
-console.log('\n✅ После очистки:', buyerModel.get());
+console.log('\n✅ После очистки:', buyerModel.getData());
 
 // Тестируем validate с пустыми данными (должны быть ошибки)
 console.log('\n✅ Валидация пустых данных:', buyerModel.validate());
 
 // Частичное заполнение для проверки отдельных полей
-buyerModel.set('email', 'test@example.com');
-buyerModel.set('address', 'г. Москва');
-console.log('\n✅ Частичное заполнение:', buyerModel.get());
+buyerModel.setField('email', 'test@example.com');
+buyerModel.setField('address', 'г. Москва');
+console.log('\n✅ Частичное заполнение:', buyerModel.getData());
 console.log('✅ Валидация частичных данных:', buyerModel.validate());
 console.log('');
 
 // === 4. Подключение к серверу ===
 console.log('=== ЗАПРОС К СЕРВЕРУ ===\n');
 
-const apiOrigin = import.meta.env.VITE_API_ORIGIN;
-console.log('🌐 VITE_API_ORIGIN:', apiOrigin);
-
-// Проверка: если переменная не загрузилась
-if (!apiOrigin || apiOrigin === 'undefined') {
-  console.error('❌ ОШИБКА: VITE_API_ORIGIN не задана!');
-  console.log('💡 Создайте файл .env в корне проекта (рядом с package.json):');
-  console.log('   VITE_API_ORIGIN=https://larek-api.nomoreparties.co');
-  console.log('💡 Затем перезапустите сервер: npm run dev');
-  
-  // Для тестов используем хардкод (удалите после настройки .env)
-  console.log('⚠️ Используем хардкод URL для тестов...');
-}
-
-// Создаем экземпляр API с проверкой
-const baseUrl = apiOrigin && apiOrigin !== 'undefined' 
-  ? apiOrigin 
-  : 'https://larek-api.nomoreparties.co';
-  
-console.log('🔗 Базовый URL:', baseUrl);
-
-const api = new Api(baseUrl, {
+// Создаем экземпляр API с использованием константы из utils/constants.ts
+const api = new Api(API_URL, {
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -156,3 +139,22 @@ larekAPI
     console.log('Количество товаров:', productsModel.getItems().length);
     console.log('Первый товар:', productsModel.getItems()[0]);
   })
+  .catch((error) => {
+    console.error('❌ ОШИБКА ПРИ ПОЛУЧЕНИИ ТОВАРОВ:', error);
+  });
+
+// === 5. Простой рендер для проверки работы приложения ===
+const gallery = document.querySelector('.gallery');
+if (gallery) {
+  gallery.innerHTML = '<p style="padding:20px;text-align:center;color:#666">✅ Приложение работает! Откройте консоль (F12) для просмотра результатов тестирования</p>';
+}
+
+// Обновляем счётчик корзины
+const basketCounter = document.querySelector('.header__basket-counter');
+if (basketCounter) {
+  basketCounter.textContent = '0';
+}
+
+console.log('\n=== ВСЕ ТЕСТЫ ЗАПУЩЕНЫ ===');
+console.log('💡 Проверьте консоль выше для результатов тестирования моделей');
+console.log('💡 Проверьте ответ от сервера в асинхронном запросе');

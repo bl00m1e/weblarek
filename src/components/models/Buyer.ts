@@ -1,4 +1,4 @@
-import { IBuyer, TPayment } from '../../types/index';
+import { IBuyer, TPayment, TBuyerErrors } from '../../types/index';
 
 export class Buyer {
   private payment: TPayment | null = null;
@@ -6,15 +6,15 @@ export class Buyer {
   private phone: string = '';
   private address: string = '';
 
-  set(field: keyof IBuyer, value: string | TPayment | null): void {
+  setField(field: keyof IBuyer, value: string | TPayment | null): void {
     if (field in this) {
       (this as Record<string, unknown>)[field] = value;
     }
   }
 
-  get(): IBuyer {
+  getData(): IBuyer {
     return {
-      payment: this.payment as TPayment,
+      payment: this.payment,
       email: this.email,
       phone: this.phone,
       address: this.address,
@@ -28,8 +28,8 @@ export class Buyer {
     this.address = '';
   }
 
-  validate(): Record<string, string> {
-    const errors: Record<string, string> = {};
+  validate(): TBuyerErrors {
+    const errors: TBuyerErrors = {};
 
     if (!this.payment) {
       errors.payment = 'Не выбран вид оплаты';
@@ -45,14 +45,5 @@ export class Buyer {
     }
 
     return errors;
-  }
-
-  // Валидация отдельного поля
-  isValid(field: keyof IBuyer): boolean {
-    const value = this[field];
-    if (field === 'payment') {
-      return value !== null;
-    }
-    return typeof value === 'string' && value.trim() !== '';
   }
 }
