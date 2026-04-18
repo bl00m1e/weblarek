@@ -1,4 +1,3 @@
-// src/components/views/Success.ts
 import { Component } from '../base/Component';
 
 interface ISuccessData {
@@ -13,7 +12,7 @@ export class Success extends Component<ISuccessData> {
         super(container);
         this.closeButton = this.container.querySelector('.order-success__close')!;
         this.descriptionElement = this.container.querySelector('.order-success__description')!;
-
+        
         this.closeButton.addEventListener('click', () => this.onClose());
     }
 

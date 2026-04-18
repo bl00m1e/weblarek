@@ -1,5 +1,3 @@
-// src/components/models/Cart.ts
-
 import { IProduct } from '../../types';
 import { IEvents } from '../base/Events';
 
@@ -10,15 +8,14 @@ export class Cart {
 
     private emitChanges() {
         this.events.emit('cart:changed', {
-            items: [...this.items], // ИСПРАВЛЕНИЕ: копия массива
+            items: [...this.items], 
             total: this.getTotal()
         });
     }
 
     addProduct(product: IProduct): void {
-        // ИСПРАВЛЕНИЕ: проверяем, что товар не в корзине и имеет цену
         if (!this.isInCart(product.id) && product.price !== null) {
-            this.items.push({ ...product }); // ИСПРАВЛЕНИЕ: копируем объект
+            this.items.push({ ...product }); 
             this.emitChanges();
         }
     }
@@ -26,8 +23,6 @@ export class Cart {
     removeProduct(id: string): void {
         const initialLength = this.items.length;
         this.items = this.items.filter(item => item.id !== id);
-        
-        // ИСПРАВЛЕНИЕ: эмитим только если что-то изменилось
         if (this.items.length !== initialLength) {
             this.emitChanges();
         }
@@ -45,7 +40,7 @@ export class Cart {
     }
 
     getItems(): IProduct[] {
-        return [...this.items]; // ИСПРАВЛЕНИЕ: возвращаем копию
+        return [...this.items]; 
     }
 
     getCount(): number {

@@ -1,4 +1,3 @@
-// src/components/views/CardBasket.ts
 import { Card } from './Card';
 import { IProduct } from '../../types';
 
@@ -6,19 +5,20 @@ export class CardBasket extends Card {
     protected indexElement: HTMLElement;
     protected deleteButton: HTMLButtonElement;
 
-    constructor(container: HTMLElement, private onDelete: (id: string) => void) {
+    constructor(
+        container: HTMLElement,
+        private onDelete: () => void
+    ) {
         super(container);
         this.indexElement = this.container.querySelector('.basket__item-index')!;
         this.deleteButton = this.container.querySelector('.basket__item-delete')!;
         
-        // Предотвращаем всплытие события
         this.deleteButton.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            this.onDelete(this.id);
+            this.onDelete();
         });
         
-        // Предотвращаем клик по всей карточке
         this.container.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -30,10 +30,9 @@ export class CardBasket extends Card {
     }
 
     render(data: IProduct & { index: number }): HTMLElement {
-        this.id = data.id;
-        this.index = data.index;
         this.title = data.title;
         this.price = data.price;
+        this.index = data.index;
         return this.container;
     }
 }

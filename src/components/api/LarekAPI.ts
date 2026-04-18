@@ -1,4 +1,3 @@
-// src/components/api/LarekAPI.ts
 import { Api } from '../base/Api';
 import { IProduct, IOrderRequest, IOrderResponse } from '../../types';
 

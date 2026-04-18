@@ -1,5 +1,3 @@
-// src/components/views/Basket.ts
-
 import { Component } from '../base/Component';
 
 interface IBasketData {
@@ -26,7 +24,6 @@ export class Basket extends Component<IBasketData> {
             this.listElement.replaceChildren(...items);
             this.setDisabled(this.buttonElement, false);
         } else {
-            // ИСПРАВЛЕНИЕ: правильное отображение пустой корзины
             const emptyMessage = document.createElement('li');
             emptyMessage.className = 'basket__empty';
             emptyMessage.textContent = 'Корзина пуста';
@@ -42,9 +39,11 @@ export class Basket extends Component<IBasketData> {
         this.setText(this.totalElement, `${total} синапсов`);
     }
 
-    render(data: IBasketData): HTMLElement {
-        this.items = data.items;
-        this.total = data.total;
+    render(data?: IBasketData): HTMLElement {
+        if (data) {
+            this.items = data.items;
+            this.total = data.total;
+        }
         return this.container;
     }
 }

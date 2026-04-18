@@ -1,18 +1,14 @@
-// src/components/views/CardPreview.ts
-
-import { Card } from './Card';
+import { CardWithImage } from './CardWithImages';
 import { IProduct } from '../../types';
 
-export class CardPreview extends Card {
+export class CardPreview extends CardWithImage {
     protected descriptionElement: HTMLElement;
     protected buttonElement: HTMLButtonElement;
     private currentPrice: number | null = null;
-    private currentId: string = '';
 
     constructor(
         container: HTMLElement,
-        private onAdd: (id: string) => void,
-        private onRemove: (id: string) => void
+        private onButtonClick: () => void
     ) {
         super(container);
         this.descriptionElement = this.container.querySelector('.card__text')!;
@@ -20,30 +16,20 @@ export class CardPreview extends Card {
         
         this.buttonElement.addEventListener('click', (e) => {
             e.stopPropagation();
-            
-            if (this.buttonElement.disabled) {
-                return;
-            }
-            
-            const isInCart = this.buttonElement.dataset.inCart === 'true';
-            
-            if (isInCart) {
-                this.onRemove(this.currentId);
-            } else {
-                this.onAdd(this.currentId);
+            if (!this.buttonElement.disabled) {
+                this.onButtonClick();
             }
         });
     }
 
-    // ПУБЛИЧНЫЙ МЕТОД для обновления состояния кнопки
-    public updateCartState(isInCart: boolean): void {
+    public updateButtonState(isInCart: boolean): void {
         if (this.currentPrice !== null) {
             this.buttonElement.dataset.inCart = String(isInCart);
             this.setText(this.buttonElement, isInCart ? 'Удалить из корзины' : 'Купить');
         }
     }
 
-    private updateButtonState(isInCart: boolean, price: number | null): void {
+    private updateButtonText(isInCart: boolean, price: number | null): void {
         this.currentPrice = price;
         this.buttonElement.dataset.inCart = String(isInCart);
         
@@ -61,17 +47,12 @@ export class CardPreview extends Card {
     }
 
     render(data: IProduct & { inCart: boolean }): HTMLElement {
-        this.currentId = data.id;
-        this.currentPrice = data.price;
-        
-        this.id = data.id;
         this.title = data.title;
         this.image = data.image;
         this.category = data.category;
         this.price = data.price;
         this.description = data.description;
-        this.updateButtonState(data.inCart, data.price);
-        
+        this.updateButtonText(data.inCart, data.price);
         return this.container;
     }
 }

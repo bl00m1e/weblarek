@@ -1,22 +1,17 @@
-// src/components/views/CardCatalog.ts
-
-import { Card } from './Card';
+import { CardWithImage } from './CardWithImages';
 import { IProduct } from '../../types';
 
-export class CardCatalog extends Card {
-    constructor(container: HTMLElement, private onClick: (id: string) => void) {
+export class CardCatalog extends CardWithImage {
+    constructor(container: HTMLElement, private onClick: () => void) {
         super(container);
-        // ВСЕ карточки должны быть кликабельными, независимо от цены
-        this.container.addEventListener('click', () => this.onClick(this.id));
+        this.container.addEventListener('click', () => this.onClick());
     }
 
     render(data: IProduct): HTMLElement {
-        this.id = data.id;
         this.title = data.title;
         this.image = data.image;
         this.category = data.category;
         this.price = data.price;
-        // НЕ блокируем контейнер здесь! Цена null не должна влиять на кликабельность карточки
         return this.container;
     }
 }
