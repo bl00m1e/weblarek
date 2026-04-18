@@ -19,7 +19,7 @@ export interface IProduct {
 
 // Покупатель
 export interface IBuyer {
-    payment: TPayment | null;  
+    payment: TPayment | null;
     email: string;
     phone: string;
     address: string;
@@ -33,7 +33,7 @@ export type TPayment = 'card' | 'cash';
 // Объект заказа, отправляемый на сервер
 export interface IOrderRequest extends IBuyer {
     total: number;
-    items: string[]; 
+    items: string[]; // массив id товаров
 }
 
 // Ответ сервера при получении каталога

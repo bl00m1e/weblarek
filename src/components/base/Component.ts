@@ -1,14 +1,25 @@
-/**
- * Базовый компонент
- */
+// src/components/base/Component.ts
 export abstract class Component<T> {
-    protected constructor(protected readonly container: HTMLElement) {
-        // Учитывайте что код в конструкторе исполняется ДО всех объявлений в дочернем классе
+    protected constructor(protected readonly container: HTMLElement) {}
+
+    // Публичный геттер для доступа к корневому элементу
+    public get element(): HTMLElement {
+        return this.container;
     }
 
-    // Инструментарий для работы с DOM в дочерних компонентах
+    // Переключение класса
+    protected toggleClass(element: HTMLElement, className: string, force?: boolean) {
+        element.classList.toggle(className, force);
+    }
 
-    // Установить изображение с альтернативным текстом
+    // Установка текстового содержимого
+    protected setText(element: HTMLElement, value: unknown) {
+        if (element) {
+            element.textContent = String(value);
+        }
+    }
+
+    // Установка изображения с альтернативным текстом
     protected setImage(element: HTMLImageElement, src: string, alt?: string) {
         if (element) {
             element.src = src;
@@ -16,6 +27,24 @@ export abstract class Component<T> {
                 element.alt = alt;
             }
         }
+    }
+
+    // Сменить статус блокировки
+    protected setDisabled(element: HTMLElement, state: boolean) {
+        if (element) {
+            if (state) element.setAttribute('disabled', 'disabled');
+            else element.removeAttribute('disabled');
+        }
+    }
+
+    // Скрыть элемент
+    protected setHidden(element: HTMLElement) {
+        element.style.display = 'none';
+    }
+
+    // Показать элемент
+    protected setVisible(element: HTMLElement) {
+        element.style.removeProperty('display');
     }
 
     // Вернуть корневой DOM-элемент

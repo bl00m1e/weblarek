@@ -1,58 +1,58 @@
-import { IProduct } from '../../types/index';
+// src/components/models/Cart.ts
+
+import { IProduct } from '../../types';
+import { IEvents } from '../base/Events';
 
 export class Cart {
-  private items: IProduct[] = [];
+    private items: IProduct[] = [];
 
-  /**
-   * Возвращает массив всех товаров в корзине
-   */
-  getCartItems(): IProduct[] {
-    return this.items;
-  }
+    constructor(private events: IEvents) {}
 
-  /**
-   * Добавляет товар в корзину по его ID (если товара ещё нет в корзине)
-   */
-  addProductToCart(product: IProduct): void {
-    if (!this.isProductInCart(product.id)) {
-      this.items.push(product);
+    private emitChanges() {
+        this.events.emit('cart:changed', {
+            items: [...this.items], // ИСПРАВЛЕНИЕ: копия массива
+            total: this.getTotal()
+        });
     }
-  }
 
-  /**
-   * Удаляет товар из корзины по его ID
-   */
-  removeProductFromCart(id: string): void {
-    this.items = this.items.filter((item) => item.id !== id);
-  }
+    addProduct(product: IProduct): void {
+        // ИСПРАВЛЕНИЕ: проверяем, что товар не в корзине и имеет цену
+        if (!this.isInCart(product.id) && product.price !== null) {
+            this.items.push({ ...product }); // ИСПРАВЛЕНИЕ: копируем объект
+            this.emitChanges();
+        }
+    }
 
-  /**
-   * Полностью очищает корзину
-   */
-  clearCart(): void {
-    this.items = [];
-  }
+    removeProduct(id: string): void {
+        const initialLength = this.items.length;
+        this.items = this.items.filter(item => item.id !== id);
+        
+        // ИСПРАВЛЕНИЕ: эмитим только если что-то изменилось
+        if (this.items.length !== initialLength) {
+            this.emitChanges();
+        }
+    }
 
-  /**
-   * Возвращает общую стоимость всех товаров в корзине
-   */
-  getCartTotalPrice(): number {
-    return this.items.reduce((sum, item) => {
-      return item.price !== null ? sum + item.price : sum;
-    }, 0);
-  }
+    clear(): void {
+        if (this.items.length > 0) {
+            this.items = [];
+            this.emitChanges();
+        }
+    }
 
-  /**
-   * Возвращает количество товаров в корзине
-   */
-  getCartItemsCount(): number {
-    return this.items.length;
-  }
+    getTotal(): number {
+        return this.items.reduce((sum, item) => sum + (item.price || 0), 0);
+    }
 
-  /**
-   * Проверяет, есть ли товар в корзине по его ID
-   */
-  isProductInCart(id: string): boolean {
-    return this.items.some((item) => item.id === id);
-  }
+    getItems(): IProduct[] {
+        return [...this.items]; // ИСПРАВЛЕНИЕ: возвращаем копию
+    }
+
+    getCount(): number {
+        return this.items.length;
+    }
+
+    isInCart(id: string): boolean {
+        return this.items.some(item => item.id === id);
+    }
 }
