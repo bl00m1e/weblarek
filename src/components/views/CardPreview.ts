@@ -16,9 +16,7 @@ export class CardPreview extends CardWithImage {
         
         this.buttonElement.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (!this.buttonElement.disabled) {
-                this.onButtonClick();
-            }
+            this.onButtonClick();
         });
     }
 

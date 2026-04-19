@@ -1,5 +1,6 @@
 import { Form } from './Form';
 import { TPayment } from '../../types';
+import { debounce } from '../../utils/utils';
 
 export interface IOrderFormState {
     payment?: TPayment;
@@ -15,8 +16,9 @@ export class OrderForm extends Form<IOrderFormState> {
 
     constructor(
         container: HTMLElement,
-        onSubmit: (data: Partial<IOrderFormState>) => void,
-        private onPaymentChange: (method: TPayment) => void
+        onSubmit: () => void,
+        onPaymentChange: (method: TPayment) => void,
+        onAddressChange: (value: string) => void
     ) {
         super(container, onSubmit);
         
@@ -24,12 +26,16 @@ export class OrderForm extends Form<IOrderFormState> {
         this.cashButton = this.container.querySelector('button[name=cash]')!;
         this.addressInput = this.container.querySelector('input[name=address]')!;
         
-        this.cardButton.addEventListener('click', () => {
-            this.onPaymentChange('card');
-        });
+        this.cardButton.addEventListener('click', () => onPaymentChange('card'));
+        this.cashButton.addEventListener('click', () => onPaymentChange('cash'));
         
-        this.cashButton.addEventListener('click', () => {
-            this.onPaymentChange('cash');
+        const debouncedAddressChange = debounce((value: string) => {
+            onAddressChange(value);
+        }, 400);
+        
+        this.addressInput.addEventListener('input', (e) => {
+            const target = e.target as HTMLInputElement;
+            debouncedAddressChange(target.value);
         });
     }
 

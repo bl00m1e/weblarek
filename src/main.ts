@@ -16,7 +16,7 @@ import { OrderForm } from './components/views/OrderForm';
 import { ContactsForm } from './components/views/ContactsForm';
 import { Success } from './components/views/Success';
 import { IProduct, IOrderRequest, TPayment, IBuyer } from './types';
-import { cloneTemplate, ensureElement, debounce } from './utils/utils';
+import { cloneTemplate, ensureElement } from './utils/utils';
 
 // ===== ИНИЦИАЛИЗАЦИЯ =====
 const events = new EventEmitter();
@@ -26,11 +26,6 @@ const api = new LarekAPI(API_URL);
 const productsModel = new Products(events);
 const cartModel = new Cart(events);
 const buyerModel = new Buyer(events);
-
-// Отложенная валидация
-const debouncedValidate = debounce(() => {
-    buyerModel.validate();
-}, 400);
 
 // Шаблоны
 const cardCatalogTemplate = ensureElement<HTMLTemplateElement>('#card-catalog');
@@ -52,47 +47,34 @@ const basket = new Basket(cloneTemplate(basketTemplate), () => events.emit('orde
 const header = new Header(headerElement, () => events.emit('basket:open'));
 const galleryView = new Gallery(galleryElement);
 
+// Превью создается однократно
+const preview = new CardPreview(
+    cloneTemplate(cardPreviewTemplate),
+    () => events.emit('card:preview-toggle')
+);
+
 // Формы создаются однократно
 const orderForm = new OrderForm(
     cloneTemplate(orderTemplate),
     () => events.emit('order:submit'),
     (method: TPayment) => {
         buyerModel.setField('payment', method);
-        debouncedValidate();
+    },
+    (value: string) => {
+        buyerModel.setField('address', value);
     }
 );
 
 const contactsForm = new ContactsForm(
     cloneTemplate(contactsTemplate),
-    () => events.emit('contacts:submit')
+    () => events.emit('contacts:submit'),
+    (value: string) => {
+        buyerModel.setField('email', value);
+    },
+    (value: string) => {
+        buyerModel.setField('phone', value);
+    }
 );
-
-// Настройка обработчиков для форм
-const addressInput = orderForm.element.querySelector('input[name="address"]') as HTMLInputElement;
-addressInput?.addEventListener('input', (e) => {
-    const target = e.target as HTMLInputElement;
-    buyerModel.setField('address', target.value);
-    debouncedValidate();
-});
-
-const emailInput = contactsForm.element.querySelector('input[name="email"]') as HTMLInputElement;
-emailInput?.addEventListener('input', (e) => {
-    const target = e.target as HTMLInputElement;
-    buyerModel.setField('email', target.value);
-    debouncedValidate();
-});
-
-const phoneInput = contactsForm.element.querySelector('input[name="phone"]') as HTMLInputElement;
-phoneInput?.addEventListener('input', (e) => {
-    const target = e.target as HTMLInputElement;
-    buyerModel.setField('phone', target.value);
-    debouncedValidate();
-});
-
-// Переменные для хранения текущих компонентов
-let currentOrderForm: OrderForm | null = null;
-let currentContactsForm: ContactsForm | null = null;
-let currentPreview: CardPreview | null = null;
 
 // ===== ЗАГРУЗКА ДАННЫХ =====
 api.getProducts()
@@ -133,42 +115,23 @@ events.on('card:select', ({ id }: { id: string }) => {
 // 3. Изменение превью товара
 events.on('preview:changed', (product: IProduct) => {
     const inCart = cartModel.isInCart(product.id);
-    
-    if (currentPreview) {
-        currentPreview.updateButtonState(inCart);
-    } else {
-        currentPreview = new CardPreview(
-            cloneTemplate(cardPreviewTemplate),
-            () => {
-                const previewProduct = productsModel.getPreview();
-                if (previewProduct && previewProduct.price !== null) {
-                    if (cartModel.isInCart(previewProduct.id)) {
-                        events.emit('card:remove', { id: previewProduct.id });
-                    } else {
-                        events.emit('card:add', { id: previewProduct.id });
-                    }
-                }
-            }
-        );
-        
-        modal.render(currentPreview.render({ ...product, inCart }));
-    }
+    preview.updateButtonState(inCart);
+    modal.render(preview.render({ ...product, inCart }));
 });
 
-// 4. Добавление товара в корзину
-events.on('card:add', ({ id }: { id: string }) => {
-    const product = productsModel.getProductById(id);
+// 4. Переключение товара в корзине (из превью)
+events.on('card:preview-toggle', () => {
+    const product = productsModel.getPreview();
     if (product && product.price !== null) {
-        cartModel.addProduct(product);
+        if (cartModel.isInCart(product.id)) {
+            cartModel.removeProduct(product.id);
+        } else {
+            cartModel.addProduct(product);
+        }
     }
 });
 
-// 5. Удаление товара из корзины
-events.on('card:remove', ({ id }: { id: string }) => {
-    cartModel.removeProduct(id);
-});
-
-// 6. Изменение корзины
+// 5. Изменение корзины
 events.on('cart:changed', ({ items, total }: { items: IProduct[], total: number }) => {
     header.render({ counter: items.length });
     
@@ -182,13 +145,17 @@ events.on('cart:changed', ({ items, total }: { items: IProduct[], total: number 
     
     basket.render({ items: cardElements, total });
     
-    if (currentPreview) {
-        const previewProduct = productsModel.getPreview();
-        if (previewProduct) {
-            const inCart = cartModel.isInCart(previewProduct.id);
-            currentPreview.updateButtonState(inCart);
-        }
+    // Обновляем состояние кнопки в превью
+    const previewProduct = productsModel.getPreview();
+    if (previewProduct) {
+        const inCart = cartModel.isInCart(previewProduct.id);
+        preview.updateButtonState(inCart);
     }
+});
+
+// 6. Удаление товара из корзины
+events.on('card:remove', ({ id }: { id: string }) => {
+    cartModel.removeProduct(id);
 });
 
 // 7. Открытие корзины
@@ -198,106 +165,69 @@ events.on('basket:open', () => {
 
 // 8. Открытие формы заказа
 events.on('order:open', () => {
-    if (cartModel.getCount() === 0) return;
-    
-    currentOrderForm = orderForm;
-    
     const buyerData = buyerModel.getData();
-    currentOrderForm.render({
+    orderForm.render({
         payment: buyerData.payment || undefined,
         address: buyerData.address,
         valid: false,
         errors: ''
     });
-    
-    modal.render(currentOrderForm.render());
+    modal.render(orderForm.render());
 });
 
 // 9. Изменение данных покупателя
 events.on('buyer:changed', (data: IBuyer) => {
-    if (currentOrderForm) {
-        currentOrderForm.payment = data.payment;
-    }
+    orderForm.payment = data.payment;
 });
 
 // 10. Ошибки валидации
 events.on('buyer:errors', (errors: Record<string, string>) => {
     
-    if (currentOrderForm) {
-        const orderErrors: string[] = [];
-        if (errors.payment) orderErrors.push(errors.payment);
-        if (errors.address) orderErrors.push(errors.address);
-        
-        const errorText = orderErrors.join('. ');
-        const isValid = orderErrors.length === 0;
-        
-        currentOrderForm.valid = isValid;
-        currentOrderForm.errors = errorText;
-    }
+    // Для формы заказа
+    const orderErrors = ['payment', 'address']
+        .map(field => errors[field])
+        .filter(Boolean)
+        .join('. ');
     
-    if (currentContactsForm) {
-        const contactsErrors: string[] = [];
-        if (errors.email) contactsErrors.push(errors.email);
-        if (errors.phone) contactsErrors.push(errors.phone);
-        
-        const errorText = contactsErrors.join('. ');
-        const isValid = contactsErrors.length === 0;
-        
-        currentContactsForm.valid = isValid;
-        currentContactsForm.errors = errorText;
-    }
+    orderForm.valid = orderErrors.length === 0;
+    orderForm.errors = orderErrors;
+    
+    // Для формы контактов
+    const contactsErrors = ['email', 'phone']
+        .map(field => errors[field])
+        .filter(Boolean)
+        .join('. ');
+    
+    contactsForm.valid = contactsErrors.length === 0;
+    contactsForm.errors = contactsErrors;
 });
 
 // 11. Сабмит формы заказа (переход к контактам)
 events.on('order:submit', () => {
     const buyerData = buyerModel.getData();
     
-    if (!buyerData.payment || !buyerData.address.trim()) {
-        buyerModel.validate();
-        return;
-    }
-    
-    currentContactsForm = contactsForm;
-    
-    const data = buyerModel.getData();
-    currentContactsForm.render({
-        email: data.email,
-        phone: data.phone,
+    contactsForm.render({
+        email: buyerData.email,
+        phone: buyerData.phone,
         valid: false,
         errors: ''
     });
     
-    modal.render(currentContactsForm.render());
+    modal.render(contactsForm.render());
 });
 
 // 12. Сабмит контактов (оформление заказа)
 events.on('contacts:submit', () => {
     const buyerData = buyerModel.getData();
     
-    if (!buyerData.email.trim() || !buyerData.phone.trim()) {
-        buyerModel.validate();
-        return;
-    }
-    
-    if (!buyerData.payment) {
-        console.error('Payment method is required');
-        return;
-    }
-    
     const order: IOrderRequest = {
-        payment: buyerData.payment,
+        payment: buyerData.payment!,
         email: buyerData.email,
         phone: buyerData.phone,
         address: buyerData.address,
         total: cartModel.getTotal(),
         items: cartModel.getItems().map(item => item.id)
     };
-    
-    const submitButton = contactsForm.element.querySelector('button[type=submit]') as HTMLButtonElement;
-    if (submitButton) {
-        submitButton.disabled = true;
-        submitButton.textContent = 'Отправка...';
-    }
     
     api.createOrder(order)
         .then(response => {
@@ -312,24 +242,13 @@ events.on('contacts:submit', () => {
         })
         .catch(err => {
             console.error('Ошибка оформления заказа:', err);
-            
-            if (currentContactsForm) {
-                currentContactsForm.errors = 'Произошла ошибка при оформлении заказа. Попробуйте еще раз.';
-                
-                if (submitButton) {
-                    submitButton.disabled = false;
-                    submitButton.textContent = 'Оплатить';
-                }
-            }
+            contactsForm.errors = 'Произошла ошибка при оформлении заказа. Попробуйте еще раз.';
         });
 });
 
 // 13. Закрытие модального окна
 events.on('modal:close', () => {
     modal.close();
-    currentOrderForm = null;
-    currentContactsForm = null;
-    currentPreview = null;
 });
 
 console.log('✅ Приложение Web-ларёк запущено!');

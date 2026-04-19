@@ -4,15 +4,14 @@ export abstract class Form<T> extends Component<T> {
     protected submitButton: HTMLButtonElement;
     protected errorsElement: HTMLElement;
 
-    constructor(container: HTMLElement, protected onSubmit: (data: Partial<T>) => void) {
+    constructor(container: HTMLElement, protected onSubmit: () => void) {
         super(container);
         this.submitButton = this.container.querySelector('button[type=submit]')!;
         this.errorsElement = this.container.querySelector('.form__errors')!;
         
         this.container.addEventListener('submit', (e) => {
             e.preventDefault();
-            const formData = this.getFormData();
-            this.onSubmit(formData);
+            this.onSubmit();
         });
     }
 
